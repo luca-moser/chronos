@@ -1,6 +1,9 @@
-package khronos
+package chronos
 
-import "time"
+import (
+	"sort"
+	"time"
+)
 
 // intervals
 type ScheduleInterval byte
@@ -26,16 +29,22 @@ type TaskSchedule struct {
 
 	// specific days of a month, i.e. the 8th, 16th, 20th (used in monthly scheduling)
 	// - 8th at 08:00, 12:00... (multiple times on the given days)
-	days []MonthDay
+	days         []MonthDay
+	nextDayIndex int
+
 	// weekdays (used for weekly scheduling)
 	// - mondays at 9:45, 15:15 (multiple times on the given weekday)
-	weekdays []Weekday
+	weekdays         []Weekday
+	nextWeekdayIndex int
+
 	// daily (used for daily scheduling)
 	// - everyday at 14:00, 19:00
-	dailyTimes []time
+	dailyTimes         []time.Time
+	nextDailyTimeIndex int
 
 	// once at specific date
 	onceAtDate time.Time
+
 	// once after duration
 	onceAfterDuration time.Duration
 
@@ -47,77 +56,138 @@ type TaskSchedule struct {
 }
 
 func (ts *TaskSchedule) Init(exe chan<- struct{}, abort <-chan struct{}) {
+
 	for {
 		nextExecutionSignal := time.NewTimer(ts.nextExecutionIn())
 		select {
 		case <-nextExecutionSignal.C:
+			if ts.plan == INTERVAL_ONCE_IN || ts.plan == INTERVAL_ONCE_DATE {
+				break
+			}
 		case <-abort:
 			break
 		}
 		// next execution time is reached, execute task
-		exe<-struct{}{}
+		exe <- struct{}{}
 	}
 }
 
 // computes the duration until the next execution should happen by the given plan
-func( ts *TaskSchedule) nextExecutionIn() time.Duration {
+func (ts *TaskSchedule) nextExecutionIn() time.Duration {
 	now := time.Now()
 	switch ts.plan {
 	case INTERVAL_ONCE_IN:
 		return ts.onceAfterDuration
 	case INTERVAL_ONCE_DATE:
 		return time.Until(ts.onceAtDate)
-	case INTERVAL_EVERY_DAY:
-		_ = now.Day()
 
-		// what is the next day in our schedule?
+	case INTERVAL_EVERY_DAY:
+		nextTime := ts.nextDailyTime()
+		next := time.Date(now.Year(), now.Month(), now.Day(), nextTime.Hour(), nextTime.Minute(), nextTime.Second(), 0, time.UTC)
+		return time.Until(next)
 
 	case INTERVAL_EVERY_WEEK:
+		todayWeekday := now.Weekday()
+
+		// next
+		var next time.Time
+		nextWeekday := ts.nextWeekday()
+		at := nextWeekday.at
+		nextWeekdayNum := nextWeekday.day
+
+		if nextWeekdayNum < todayWeekday {
+			// advance a week
+			inWeekAdv := 7 - todayWeekday
+			next = now.AddDate(0, 0, int(inWeekAdv+nextWeekdayNum))
+		} else {
+			// same week
+			next = now.AddDate(0, 0, int(nextWeekdayNum-todayWeekday))
+		}
+		next = time.Date(now.Year(), now.Month(), next.Day(), at.Hour(), at.Minute(), at.Second(), 0, time.UTC)
+		return time.Until(next)
+
 	case INTERVAL_EVERY_MONTH:
+		todayNum := now.Day()
+		var next time.Time
+		nextDay := ts.nextDay()
+		at := nextDay.at
+		nextDayNum := nextDay.day
+
+		// TODO: check leap year and 30/31 case
+
+		if int(nextDayNum) < todayNum {
+			// advance one month
+			next = now.AddDate(0, 1, 0)
+			next = time.Date(next.Year(), next.Month(), int(nextDayNum), at.Hour(), at.Minute(), at.Second(), 0, time.UTC)
+		} else {
+			next = time.Date(now.Year(), now.Month(), int(nextDayNum), at.Hour(), at.Minute(), at.Second(), 0, time.UTC)
+		}
+		return time.Until(next)
 	}
 	return 0
 }
 
-// a day in a month and a specific time on that day
-type MonthDay struct {
-	day uint
-	at  time.Time
+// returns the next day to check the duration for
+func (ts *TaskSchedule) nextDay() MonthDay {
+	day := ts.days[ts.nextDayIndex]
+	if ts.nextDayIndex == len(ts.days)-1 {
+		ts.nextDayIndex = 0 // reset
+	} else {
+		ts.nextDayIndex++
+	}
+	return day
 }
 
-// a weekday and a specific time on that day
-type Weekday struct {
-	day time.Weekday
-	at  time.Time
+// returns the next weekday to check the duration for
+func (ts *TaskSchedule) nextWeekday() Weekday {
+	weekday := ts.weekdays[ts.nextWeekdayIndex]
+	if ts.nextWeekdayIndex == len(ts.weekdays)-1 {
+		ts.nextWeekdayIndex = 0 // reset
+	} else {
+		ts.nextWeekdayIndex++
+	}
+	return weekday
 }
 
-// creates a new month day (day must be >0 and <=31)
-func NewMonthDay(day uint, at time.Time) MonthDay {
-	if day > 31 {
-		panic("month day can't be greater than 31")
+// returns the next daily time to check the duration for
+func (ts *TaskSchedule) nextDailyTime() time.Time {
+	dailyTime := ts.dailyTimes[ts.nextDailyTimeIndex]
+	if ts.nextDailyTimeIndex == len(ts.dailyTimes)-1 {
+		ts.nextDailyTimeIndex = 0 // reset
+	} else {
+		ts.nextDailyTimeIndex++
 	}
-	// we use the actual real day number
-	if day == 0 {
-		panic("month day can't be 0")
-	}
-	return MonthDay{day, at}
+	return dailyTime
 }
 
 func NewMonthlySchedulingPlan(days []MonthDay) TaskSchedule {
+	if len(days) == 0 {
+		panic("days slice is empty")
+	}
 	taskSchedule := TaskSchedule{}
+	sort.Sort(MonthDaysSorted(days))
 	taskSchedule.days = days
 	taskSchedule.plan = INTERVAL_EVERY_MONTH
 	return taskSchedule
 }
 
 func NewWeeklySchedulingPlan(weekdays []Weekday) TaskSchedule {
+	if len(weekdays) == 0 {
+		panic("weekdays slice is empty")
+	}
 	taskSchedule := TaskSchedule{}
+	sort.Sort(WeekdaysSorted(weekdays))
 	taskSchedule.weekdays = weekdays
 	taskSchedule.plan = INTERVAL_EVERY_WEEK
 	return taskSchedule
 }
 
-func NewDailySchedulingPlan(times []time) TaskSchedule {
+func NewDailySchedulingPlan(times []time.Time) TaskSchedule {
+	if len(times) == 0 {
+		panic("times slice is empty")
+	}
 	taskSchedule := TaskSchedule{}
+	sort.Sort(TimesSorted(times))
 	taskSchedule.dailyTimes = times
 	taskSchedule.plan = INTERVAL_EVERY_DAY
 	return taskSchedule

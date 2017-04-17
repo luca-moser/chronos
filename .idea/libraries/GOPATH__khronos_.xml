@@ -15,7 +15,7 @@
       <root url="file://$PROJECT_DIR$/../../github.com" />
     </SOURCES>
     <excluded>
-      <root url="file://$PROJECT_DIR$" />
+      <root url="file://$PROJECT_DIR$/../chronos" />
     </excluded>
   </library>
 </component>

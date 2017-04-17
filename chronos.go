@@ -1,4 +1,4 @@
-package khronos
+package chronos
 
 type ScheduledFunc func(...interface{}) (interface{}, error)
 
