@@ -3,7 +3,7 @@ package chronos
 import "time"
 
 // creates a new month day (day must be >0 and <=31)
-func NewMonthDay(day uint, at time.Time) MonthDay {
+func NewMonthDay(day uint, at DayTime) MonthDay {
 	if day > 31 {
 		panic("month day can't be greater than 31")
 	}
@@ -17,7 +17,7 @@ func NewMonthDay(day uint, at time.Time) MonthDay {
 // a day in a month and a specific time on that day
 type MonthDay struct {
 	day uint
-	at  time.Time
+	at  DayTime
 }
 
 type MonthDaysSorted []MonthDay
@@ -36,13 +36,13 @@ func (mds MonthDaysSorted) Less(i, j int) bool {
 		return false
 	}
 
-	return this.at.Before(next.at)
+	return this.at.AsTime().Before(next.at.AsTime())
 }
 
 // a weekday and a specific time on that day
 type Weekday struct {
 	day time.Weekday
-	at  time.Time
+	at  DayTime
 }
 
 type WeekdaysSorted []Weekday
@@ -61,13 +61,24 @@ func (wds WeekdaysSorted) Less(i, j int) bool {
 		return false
 	}
 
-	return this.at.Before(next.at)
+	return this.at.AsTime().Before(next.at.AsTime())
 }
 
-type TimesSorted []time.Time
+// represents a 24 hour day
+type DayTime struct {
+	hour   int
+	minute int
+	second int
+}
 
-func (ts TimesSorted) Len() int      { return len(ts) }
-func (ts TimesSorted) Swap(i, j int) { ts[i], ts[j] = ts[j], ts[i] }
-func (ts TimesSorted) Less(i, j int) bool {
-	return ts[i].Before(ts[j])
+func (dt *DayTime) AsTime() time.Time {
+	return time.Date(0, 0, 0, dt.hour, dt.minute, dt.second, 0, time.Local)
+}
+
+type DayTimesSorted []DayTime
+
+func (dts DayTimesSorted) Len() int      { return len(dts) }
+func (dts DayTimesSorted) Swap(i, j int) { dts[i], dts[j] = dts[j], dts[i] }
+func (dts DayTimesSorted) Less(i, j int) bool {
+	return dts[i].AsTime().Before(dts[j].AsTime())
 }

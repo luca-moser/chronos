@@ -1,9 +1,7 @@
 package chronos
 
-type ScheduledFunc func(...interface{}) (interface{}, error)
-
 // creates a new task which executes under the given schedule
-func NewScheduledTask(action ScheduledFunc, schedule TaskSchedule) ScheduledTask {
+func NewScheduledTask(action func(), schedule TaskSchedule) ScheduledTask {
 	task := ScheduledTask{}
 	task.action = action
 	task.schedule = schedule
@@ -14,10 +12,14 @@ func NewScheduledTask(action ScheduledFunc, schedule TaskSchedule) ScheduledTask
 
 // a task which's action executes by the given schedule.
 type ScheduledTask struct {
-	action        ScheduledFunc
+	action        func()
 	schedule      TaskSchedule
 	executeSignal chan struct{}
 	abortSignal   chan struct{}
+}
+
+func (st *ScheduledTask) Stop() {
+	st.abortSignal<-struct{}{}
 }
 
 // starts the scheduling (non-blocking)
@@ -36,7 +38,7 @@ func (st *ScheduledTask) Start() {
 		for {
 			select {
 			case <-st.executeSignal:
-				st.action()
+				go st.action()
 			case <-st.abortSignal:
 				scheduleAbortSignal<-struct{}{}
 				break

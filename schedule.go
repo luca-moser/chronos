@@ -39,7 +39,7 @@ type TaskSchedule struct {
 
 	// daily (used for daily scheduling)
 	// - everyday at 14:00, 19:00
-	dailyTimes         []time.Time
+	dailyTimes         []DayTime
 	nextDailyTimeIndex int
 
 	// once at specific date
@@ -58,7 +58,8 @@ type TaskSchedule struct {
 func (ts *TaskSchedule) Init(exe chan<- struct{}, abort <-chan struct{}) {
 
 	for {
-		nextExecutionSignal := time.NewTimer(ts.nextExecutionIn())
+		nextDurationToWait := ts.nextExecutionIn()
+		nextExecutionSignal := time.NewTimer(nextDurationToWait)
 		select {
 		case <-nextExecutionSignal.C:
 			if ts.plan == INTERVAL_ONCE_IN || ts.plan == INTERVAL_ONCE_DATE {
@@ -83,7 +84,11 @@ func (ts *TaskSchedule) nextExecutionIn() time.Duration {
 
 	case INTERVAL_EVERY_DAY:
 		nextTime := ts.nextDailyTime()
-		next := time.Date(now.Year(), now.Month(), now.Day(), nextTime.Hour(), nextTime.Minute(), nextTime.Second(), 0, time.UTC)
+		next := time.Date(now.Year(), now.Month(), now.Day(), nextTime.hour, nextTime.minute, nextTime.second, 0, time.Local)
+		if next.Before(time.Now()) {
+			// the next time is on the next day
+			next = next.AddDate(0, 0, 1)
+		}
 		return time.Until(next)
 
 	case INTERVAL_EVERY_WEEK:
@@ -103,7 +108,11 @@ func (ts *TaskSchedule) nextExecutionIn() time.Duration {
 			// same week
 			next = now.AddDate(0, 0, int(nextWeekdayNum-todayWeekday))
 		}
-		next = time.Date(now.Year(), now.Month(), next.Day(), at.Hour(), at.Minute(), at.Second(), 0, time.UTC)
+		next = time.Date(now.Year(), now.Month(), next.Day(), at.hour, at.minute, at.second, 0, time.Local)
+		if next.Before(time.Now()) {
+			// the next time is in one week
+			next = next.AddDate(0, 0, 7)
+		}
 		return time.Until(next)
 
 	case INTERVAL_EVERY_MONTH:
@@ -113,18 +122,69 @@ func (ts *TaskSchedule) nextExecutionIn() time.Duration {
 		at := nextDay.at
 		nextDayNum := nextDay.day
 
-		// TODO: check leap year and 30/31 case
-
 		if int(nextDayNum) < todayNum {
 			// advance one month
-			next = now.AddDate(0, 1, 0)
-			next = time.Date(next.Year(), next.Month(), int(nextDayNum), at.Hour(), at.Minute(), at.Second(), 0, time.UTC)
+			next = addMonth(now)
+
+			// auto. shrink to the correct day of the next month
+			nextDay := shrinkDay(nextDayNum, next)
+			next = time.Date(next.Year(), next.Month(), int(nextDay), at.hour, at.minute, at.second, 0, time.Local)
 		} else {
-			next = time.Date(now.Year(), now.Month(), int(nextDayNum), at.Hour(), at.Minute(), at.Second(), 0, time.UTC)
+			nextDay := shrinkDay(nextDayNum, now)
+			next = time.Date(now.Year(), now.Month(), int(nextDay), at.hour, at.minute, at.second, 0, time.Local)
+		}
+		if next.Before(time.Now()) {
+			// the next time is in one month
+			nextMonthDate := addMonth(next)
+			nextDay := shrinkDay(nextDayNum, nextMonthDate)
+			next = time.Date(nextMonthDate.Year(), nextMonthDate.Month(), int(nextDay), at.hour, at.minute, at.second, 0, time.Local)
 		}
 		return time.Until(next)
 	}
 	return 0
+}
+
+// advances one month:
+// unlike the built in time.AddDate function it actually advances one month
+// instead of just adding 30 or whatever days to the given date.
+func addMonth(date time.Time) time.Time {
+	if date.Month() == 12 {
+		return time.Date(date.Year()+1, time.January, 1, 0, 0, 0, 0, time.Local)
+	}
+	return time.Date(date.Year(), date.Month()+1, 1, 0, 0, 0, 0, time.Local)
+}
+
+// shrinks the given day correctly to the given's month/date last day
+// with respect to leap years
+func shrinkDay(day uint, date time.Time) uint {
+	month := date.Month()
+	year := date.Year()
+
+	if month == time.February && (day == 30 || day == 31) {
+		if isLeapYear(year) {
+			return 29
+		}
+		return 28
+	}
+
+	if day == 31 {
+		switch month {
+		case time.April:
+			fallthrough
+		case time.June:
+			fallthrough
+		case time.September:
+			fallthrough
+		case time.November:
+			return 30
+		}
+	}
+
+	return day
+}
+
+func isLeapYear(year int) bool {
+	return year%400 == 0 || year%4 == 0 && year%100 != 0
 }
 
 // returns the next day to check the duration for
@@ -150,7 +210,7 @@ func (ts *TaskSchedule) nextWeekday() Weekday {
 }
 
 // returns the next daily time to check the duration for
-func (ts *TaskSchedule) nextDailyTime() time.Time {
+func (ts *TaskSchedule) nextDailyTime() DayTime {
 	dailyTime := ts.dailyTimes[ts.nextDailyTimeIndex]
 	if ts.nextDailyTimeIndex == len(ts.dailyTimes)-1 {
 		ts.nextDailyTimeIndex = 0 // reset
@@ -182,12 +242,12 @@ func NewWeeklySchedulingPlan(weekdays []Weekday) TaskSchedule {
 	return taskSchedule
 }
 
-func NewDailySchedulingPlan(times []time.Time) TaskSchedule {
+func NewDailySchedulingPlan(times []DayTime) TaskSchedule {
 	if len(times) == 0 {
 		panic("times slice is empty")
 	}
 	taskSchedule := TaskSchedule{}
-	sort.Sort(TimesSorted(times))
+	sort.Sort(DayTimesSorted(times))
 	taskSchedule.dailyTimes = times
 	taskSchedule.plan = INTERVAL_EVERY_DAY
 	return taskSchedule
