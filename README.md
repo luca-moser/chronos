@@ -10,6 +10,8 @@ Notes:
 * The task's `Start()` function is non blocking.
 * The defined action is executed in a separate goroutine.
 
+### Schedule
+
 Daily:
 ```go
 // each day on 4:30, 10:45, 12:30
@@ -18,34 +20,6 @@ plan := NewDailySchedulingPlan([]DayTime{
    {10, 45, 0}, 
    {12, 30},
 })
-
-task := NewScheduledTask(func() {
-      ...
-}, plan)
-defer task.Stop()
-
-// start the task
-task.Start()
-```
-
-Once at a given date:
-```go
-// once on the 29th of November at 3 pm
-plan := NewOnceAtDatePlan(time.Date(2017, time.November, 29, 15, 0, 0, 0, time.Local))
-
-task := NewScheduledTask(func() {
-      ...
-}, plan)
-defer task.Stop()
-
-// start the task
-task.Start()
-```
-
-Once after a given duration (essentially the same as doing time.After(d time.Duration)):
-```go
-// once after 5 seconds
-plan := NewOnceAfterDuration(time.Duration(5) * time.Second)
 
 task := NewScheduledTask(func() {
       ...
@@ -85,6 +59,36 @@ plan := NewMonthlySchedulingPlan([]MonthDay{
       {day: 20, at: DayTime{21, 0, 0},      
       {day: 31, at: DayTime{9, 0, 0},
 })
+
+task := NewScheduledTask(func() {
+      ...
+}, plan)
+defer task.Stop()
+
+// start the task
+task.Start()
+```
+
+### Once 
+
+at a given date:
+```go
+// once on the 29th of November at 3 pm
+plan := NewOnceAtDatePlan(time.Date(2017, time.November, 29, 15, 0, 0, 0, time.Local))
+
+task := NewScheduledTask(func() {
+      ...
+}, plan)
+defer task.Stop()
+
+// start the task
+task.Start()
+```
+
+after a given duration (essentially the same as doing time.After(d time.Duration)):
+```go
+// once after 5 seconds
+plan := NewOnceAfterDuration(time.Duration(5) * time.Second)
 
 task := NewScheduledTask(func() {
       ...
