@@ -8,7 +8,7 @@ tasks or at a specific date or after a given duration. It is similar to the cron
 
 Notes:
 * The task's `Start()` function is non blocking.
-* The defined action is run in a separate goroutine.
+* The defined action is executed in a separate goroutine.
 
 Daily:
 ```go
