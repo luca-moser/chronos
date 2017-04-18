@@ -19,7 +19,7 @@ type ScheduledTask struct {
 }
 
 func (st *ScheduledTask) Stop() {
-	st.abortSignal<-struct{}{}
+	st.abortSignal <- struct{}{}
 }
 
 // starts the scheduling (non-blocking)
@@ -35,13 +35,14 @@ func (st *ScheduledTask) Start() {
 
 	// listen for signals to process the task
 	go func() {
+	exit:
 		for {
 			select {
 			case <-st.executeSignal:
 				go st.action()
 			case <-st.abortSignal:
-				scheduleAbortSignal<-struct{}{}
-				break
+				scheduleAbortSignal <- struct{}{}
+				break exit
 			}
 		}
 	}()

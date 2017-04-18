@@ -63,6 +63,7 @@ exit:
 		nextExecutionSignal := time.NewTimer(nextDurationToWait)
 		select {
 		case <-nextExecutionSignal.C:
+			exe <- struct{}{}
 			if ts.plan == INTERVAL_ONCE_IN || ts.plan == INTERVAL_ONCE_DATE {
 				break exit
 			}
@@ -155,7 +156,7 @@ func addMonth(date time.Time) time.Time {
 	return time.Date(date.Year(), date.Month()+1, 1, 0, 0, 0, 0, time.Local)
 }
 
-// shrinks the given day correctly to the given's month/date last day
+// shrinks the given day correctly to the given month's last day
 // with respect to leap years
 func shrinkDay(day uint, date time.Time) uint {
 	month := date.Month()
