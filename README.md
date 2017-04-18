@@ -6,6 +6,9 @@ tasks or at a specific date or after a given duration. It is similar to the cron
 
 ## Usage
 
+Notes:
+* The task's `Start()` function is non blocking.
+* The defined action is run in a separate goroutine.
 
 Daily:
 ```go
@@ -25,6 +28,33 @@ defer task.Stop()
 task.Start()
 ```
 
+Once at a given date:
+```go
+// once on the 29th of November at 3 pm
+plan := NewOnceAtDatePlan(time.Date(2017, time.November, 29, 15, 0, 0, 0, time.Local))
+
+task := NewScheduledTask(func() {
+      ...
+}, plan)
+defer task.Stop()
+
+// start the task
+task.Start()
+```
+
+Once after a given duration (essentially the same as doing time.After(d time.Duration)):
+```go
+// once after 5 seconds
+plan := NewOnceAfterDuration(time.Duration(5) * time.Second)
+
+task := NewScheduledTask(func() {
+      ...
+}, plan)
+defer task.Stop()
+
+// start the task
+task.Start()
+```
 
 Weekly:
 ```go
