@@ -57,16 +57,17 @@ type TaskSchedule struct {
 
 func (ts *TaskSchedule) Init(exe chan<- struct{}, abort <-chan struct{}) {
 
+exit:
 	for {
 		nextDurationToWait := ts.nextExecutionIn()
 		nextExecutionSignal := time.NewTimer(nextDurationToWait)
 		select {
 		case <-nextExecutionSignal.C:
 			if ts.plan == INTERVAL_ONCE_IN || ts.plan == INTERVAL_ONCE_DATE {
-				break
+				break exit
 			}
 		case <-abort:
-			break
+			break exit
 		}
 		// next execution time is reached, execute task
 		exe <- struct{}{}
