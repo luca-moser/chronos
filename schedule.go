@@ -63,8 +63,8 @@ exit:
 		nextExecutionSignal := time.NewTimer(nextDurationToWait)
 		select {
 		case <-nextExecutionSignal.C:
-			exe <- struct{}{}
 			if ts.plan == INTERVAL_ONCE_IN || ts.plan == INTERVAL_ONCE_DATE {
+				exe <- struct{}{}
 				break exit
 			}
 		case <-abort:
