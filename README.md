@@ -34,10 +34,10 @@ Weekly:
 ```go
 // on monday at 12, on friday twice at 9 am and 3 pm, once at sunday at 7 pm
 plan := NewWeeklySchedulingPlan([]DayTime{
-      {day: time.Monday, at: DayTime{12, 0, 0},
-      {day: time.Friday, at: DayTime{9, 0, 0},
-      {day: time.Friday, at: DayTime{15, 0, 0},
-      {day: time.Sunday, at: DayTime{19, 0, 0},
+      {Day: time.Monday, At: DayTime{12, 0, 0},
+      {Day: time.Friday, At: DayTime{9, 0, 0},
+      {Day: time.Friday, At: DayTime{15, 0, 0},
+      {Day: time.Sunday, At: DayTime{19, 0, 0},
 })
 
 task := NewScheduledTask(func() {
@@ -54,10 +54,10 @@ Monthly:
 // on the 12th at 4:30 pm, 20th at 6 pm and 9 pm, 31th on 9 am
 // NOTE: the 31th auto. shrinks to 28, 29 (February with leap year) or 30
 plan := NewMonthlySchedulingPlan([]MonthDay{
-      {day: 12, at: DayTime{16, 30, 0},
-      {day: 20, at: DayTime{18, 0, 0},
-      {day: 20, at: DayTime{21, 0, 0},      
-      {day: 31, at: DayTime{9, 0, 0},
+      {Day: 12, At: DayTime{16, 30, 0},
+      {Day: 20, At: DayTime{18, 0, 0},
+      {Day: 20, At: DayTime{21, 0, 0},
+      {Day: 31, At: DayTime{9, 0, 0},
 })
 
 task := NewScheduledTask(func() {
