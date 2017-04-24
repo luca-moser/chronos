@@ -101,17 +101,17 @@ task.Start()
 
 ### Persistence
 
-Use the simple `FileStorage` to save the schedule to disk, to initialize a task back on startup.
+Use the simple `FileStorage` to save the schedule to disk and to initialize the task back on startup.
 
 ```go
-	storage := NewFileStorage("./", "schedule.json")
-	planFromDisk, err := storage.LoadSchedule()
-	if err != nil {
-	    ...
-	}
+storage := NewFileStorage("./", "schedule.json")
+planFromDisk, err := storage.LoadSchedule()
+if err != nil {
+    ...
+}
 
-	// re-create the task with the plan loaded from disk
-	task := NewScheduledTask(func(){
-	    ...
-	}, planFromDisk)
+// re-create the task with the plan loaded from disk
+task := NewScheduledTask(func(){
+    ...
+}, planFromDisk)
 ```
