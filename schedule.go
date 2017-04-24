@@ -29,30 +29,30 @@ type TaskSchedule struct {
 
 	// specific days of a month, i.e. the 8th, 16th, 20th (used in monthly scheduling)
 	// - 8th at 08:00, 12:00... (multiple times on the given days)
-	days         []MonthDay
-	nextDayIndex int
+	Days         []MonthDay `json:"days"`
+	NextDayIndex int        `json:"next_day_index"`
 
 	// weekdays (used for weekly scheduling)
 	// - mondays at 9:45, 15:15 (multiple times on the given weekday)
-	weekdays         []Weekday
-	nextWeekdayIndex int
+	Weekdays         []Weekday `json:"weekdays"`
+	NextWeekdayIndex int       `json:"next_weekday_index"`
 
 	// daily (used for daily scheduling)
 	// - everyday at 14:00, 19:00
-	dailyTimes         []DayTime
-	nextDailyTimeIndex int
+	DailyTimes         []DayTime `json:"daily_times"`
+	NextDailyTimeIndex int       `json:"next_daily_time_index"`
 
 	// once at specific date
-	onceAtDate time.Time
+	OnceAtDate time.Time `json:"once_at_date"`
 
 	// once after duration
-	onceAfterDuration time.Duration
+	OnceAfterDuration time.Duration `json:"once_after_duration"`
 
 	// how are we scheduled?
-	plan ScheduleInterval
+	Plan ScheduleInterval `json:"plan"`
 
 	// next execution time
-	nextExecutionOn time.Time
+	NextExecutionOn time.Time `json:"next_execution_on"`
 }
 
 func (ts *TaskSchedule) Init(exe chan<- struct{}, abort <-chan struct{}) {
@@ -63,7 +63,7 @@ exit:
 		nextExecutionSignal := time.NewTimer(nextDurationToWait)
 		select {
 		case <-nextExecutionSignal.C:
-			if ts.plan == INTERVAL_ONCE_IN || ts.plan == INTERVAL_ONCE_DATE {
+			if ts.Plan == INTERVAL_ONCE_IN || ts.Plan == INTERVAL_ONCE_DATE {
 				exe <- struct{}{}
 				break exit
 			}
@@ -78,11 +78,11 @@ exit:
 // computes the duration until the next execution should happen by the given plan
 func (ts *TaskSchedule) nextExecutionIn() time.Duration {
 	now := time.Now()
-	switch ts.plan {
+	switch ts.Plan {
 	case INTERVAL_ONCE_IN:
-		return ts.onceAfterDuration
+		return ts.OnceAfterDuration
 	case INTERVAL_ONCE_DATE:
-		return time.Until(ts.onceAtDate)
+		return time.Until(ts.OnceAtDate)
 
 	case INTERVAL_EVERY_DAY:
 		nextTime := ts.nextDailyTime()
@@ -191,33 +191,33 @@ func isLeapYear(year int) bool {
 
 // returns the next day to check the duration for
 func (ts *TaskSchedule) nextDay() MonthDay {
-	day := ts.days[ts.nextDayIndex]
-	if ts.nextDayIndex == len(ts.days)-1 {
-		ts.nextDayIndex = 0 // reset
+	day := ts.Days[ts.NextDayIndex]
+	if ts.NextDayIndex == len(ts.Days)-1 {
+		ts.NextDayIndex = 0 // reset
 	} else {
-		ts.nextDayIndex++
+		ts.NextDayIndex++
 	}
 	return day
 }
 
 // returns the next weekday to check the duration for
 func (ts *TaskSchedule) nextWeekday() Weekday {
-	weekday := ts.weekdays[ts.nextWeekdayIndex]
-	if ts.nextWeekdayIndex == len(ts.weekdays)-1 {
-		ts.nextWeekdayIndex = 0 // reset
+	weekday := ts.Weekdays[ts.NextWeekdayIndex]
+	if ts.NextWeekdayIndex == len(ts.Weekdays)-1 {
+		ts.NextWeekdayIndex = 0 // reset
 	} else {
-		ts.nextWeekdayIndex++
+		ts.NextWeekdayIndex++
 	}
 	return weekday
 }
 
 // returns the next daily time to check the duration for
 func (ts *TaskSchedule) nextDailyTime() DayTime {
-	dailyTime := ts.dailyTimes[ts.nextDailyTimeIndex]
-	if ts.nextDailyTimeIndex == len(ts.dailyTimes)-1 {
-		ts.nextDailyTimeIndex = 0 // reset
+	dailyTime := ts.DailyTimes[ts.NextDailyTimeIndex]
+	if ts.NextDailyTimeIndex == len(ts.DailyTimes)-1 {
+		ts.NextDailyTimeIndex = 0 // reset
 	} else {
-		ts.nextDailyTimeIndex++
+		ts.NextDailyTimeIndex++
 	}
 	return dailyTime
 }
@@ -228,8 +228,8 @@ func NewMonthlySchedulingPlan(days []MonthDay) TaskSchedule {
 	}
 	taskSchedule := TaskSchedule{}
 	sort.Sort(MonthDaysSorted(days))
-	taskSchedule.days = days
-	taskSchedule.plan = INTERVAL_EVERY_MONTH
+	taskSchedule.Days = days
+	taskSchedule.Plan = INTERVAL_EVERY_MONTH
 	return taskSchedule
 }
 
@@ -239,8 +239,8 @@ func NewWeeklySchedulingPlan(weekdays []Weekday) TaskSchedule {
 	}
 	taskSchedule := TaskSchedule{}
 	sort.Sort(WeekdaysSorted(weekdays))
-	taskSchedule.weekdays = weekdays
-	taskSchedule.plan = INTERVAL_EVERY_WEEK
+	taskSchedule.Weekdays = weekdays
+	taskSchedule.Plan = INTERVAL_EVERY_WEEK
 	return taskSchedule
 }
 
@@ -250,21 +250,21 @@ func NewDailySchedulingPlan(times []DayTime) TaskSchedule {
 	}
 	taskSchedule := TaskSchedule{}
 	sort.Sort(DayTimesSorted(times))
-	taskSchedule.dailyTimes = times
-	taskSchedule.plan = INTERVAL_EVERY_DAY
+	taskSchedule.DailyTimes = times
+	taskSchedule.Plan = INTERVAL_EVERY_DAY
 	return taskSchedule
 }
 
 func NewOnceAtDatePlan(date time.Time) TaskSchedule {
 	taskSchedule := TaskSchedule{}
-	taskSchedule.onceAtDate = date
-	taskSchedule.plan = INTERVAL_ONCE_DATE
+	taskSchedule.OnceAtDate = date
+	taskSchedule.Plan = INTERVAL_ONCE_DATE
 	return taskSchedule
 }
 
 func NewOnceAfterDuration(duration time.Duration) TaskSchedule {
 	taskSchedule := TaskSchedule{}
-	taskSchedule.onceAfterDuration = duration
-	taskSchedule.plan = INTERVAL_ONCE_IN
+	taskSchedule.OnceAfterDuration = duration
+	taskSchedule.Plan = INTERVAL_ONCE_IN
 	return taskSchedule
 }

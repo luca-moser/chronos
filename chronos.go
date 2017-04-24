@@ -25,7 +25,7 @@ func (st *ScheduledTask) Stop() {
 // starts the scheduling (non-blocking)
 func (st *ScheduledTask) Start() {
 	// should use the New... functions to create a schedule
-	if st.schedule.plan == 0 {
+	if st.schedule.Plan == 0 {
 		panic("schedule has no plan defined")
 	}
 

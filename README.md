@@ -98,3 +98,20 @@ defer task.Stop()
 // start the task
 task.Start()
 ```
+
+### Persistence
+
+Use the simple `FileStorage` to save the schedule to disk, to initialize a task back on startup.
+
+```go
+	storage := NewFileStorage("./", "schedule.json")
+	planFromDisk, err := storage.LoadSchedule()
+	if err != nil {
+	    ...
+	}
+
+	// re-create the task with the plan loaded from disk
+	task := NewScheduledTask(func(){
+	    ...
+	}, planFromDisk)
+```

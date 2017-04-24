@@ -2,6 +2,7 @@ package chronos
 
 import (
 	"os"
+	"path"
 	"testing"
 	"time"
 )
@@ -103,5 +104,35 @@ func TestMonthlySchedule(t *testing.T) {
 	<-time.After(time.Duration(4) * time.Second)
 	if executionCount != 3 {
 		t.Fatalf("expected execution count to be 3 but was %d", executionCount)
+	}
+}
+
+func TestFilePersistence(t *testing.T) {
+	t.Parallel()
+	plan := NewOnceAfterDuration(time.Duration(4) * time.Second)
+
+	storage := NewFileStorage("./", "schedule.json")
+	if err := storage.SaveSchedule(&plan); err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		os.Remove(path.Join("./", "schedule.json"))
+	}()
+
+	planFromDisk, err := storage.LoadSchedule()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	executionCount := 0
+	task := NewScheduledTask(func() {
+		executionCount++
+	}, *planFromDisk)
+	defer task.Stop()
+	task.Start()
+	<-time.After(time.Duration(5) * time.Second)
+	if executionCount != 1 {
+		t.Fatalf("expected execution count to be 1 but was %d", executionCount)
 	}
 }
