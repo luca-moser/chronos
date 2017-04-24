@@ -68,9 +68,9 @@ func TestWeeklySchedule(t *testing.T) {
 	t.Parallel()
 	now := time.Now()
 	plan := NewWeeklySchedulingPlan([]Weekday{
-		{day: now.Weekday(), at: DayTime{now.Hour(), now.Minute(), now.Second() + 3}},
-		{day: now.Weekday(), at: DayTime{now.Hour(), now.Minute(), now.Second() + 2}},
-		{day: now.Weekday(), at: DayTime{now.Hour(), now.Minute(), now.Second() + 1}},
+		{Day: now.Weekday(), At: DayTime{now.Hour(), now.Minute(), now.Second() + 3}},
+		{Day: now.Weekday(), At: DayTime{now.Hour(), now.Minute(), now.Second() + 2}},
+		{Day: now.Weekday(), At: DayTime{now.Hour(), now.Minute(), now.Second() + 1}},
 	})
 
 	executionCount := 0
@@ -89,9 +89,9 @@ func TestMonthlySchedule(t *testing.T) {
 	t.Parallel()
 	now := time.Now()
 	plan := NewMonthlySchedulingPlan([]MonthDay{
-		{day: uint(now.Day()), at: DayTime{now.Hour(), now.Minute(), now.Second() + 3}},
-		{day: uint(now.Day()), at: DayTime{now.Hour(), now.Minute(), now.Second() + 2}},
-		{day: uint(now.Day()), at: DayTime{now.Hour(), now.Minute(), now.Second() + 1}},
+		{Day: uint(now.Day()), At: DayTime{now.Hour(), now.Minute(), now.Second() + 3}},
+		{Day: uint(now.Day()), At: DayTime{now.Hour(), now.Minute(), now.Second() + 2}},
+		{Day: uint(now.Day()), At: DayTime{now.Hour(), now.Minute(), now.Second() + 1}},
 	})
 
 	executionCount := 0

@@ -86,7 +86,7 @@ func (ts *TaskSchedule) nextExecutionIn() time.Duration {
 
 	case INTERVAL_EVERY_DAY:
 		nextTime := ts.nextDailyTime()
-		next := time.Date(now.Year(), now.Month(), now.Day(), nextTime.hour, nextTime.minute, nextTime.second, 0, time.Local)
+		next := time.Date(now.Year(), now.Month(), now.Day(), nextTime.Hour, nextTime.Minute, nextTime.Second, 0, time.Local)
 		if next.Before(time.Now()) {
 			// the next time is on the next day
 			next = next.AddDate(0, 0, 1)
@@ -99,8 +99,8 @@ func (ts *TaskSchedule) nextExecutionIn() time.Duration {
 		// next
 		var next time.Time
 		nextWeekday := ts.nextWeekday()
-		at := nextWeekday.at
-		nextWeekdayNum := nextWeekday.day
+		at := nextWeekday.At
+		nextWeekdayNum := nextWeekday.Day
 
 		if nextWeekdayNum < todayWeekday {
 			// advance a week
@@ -110,7 +110,7 @@ func (ts *TaskSchedule) nextExecutionIn() time.Duration {
 			// same week
 			next = now.AddDate(0, 0, int(nextWeekdayNum-todayWeekday))
 		}
-		next = time.Date(now.Year(), now.Month(), next.Day(), at.hour, at.minute, at.second, 0, time.Local)
+		next = time.Date(now.Year(), now.Month(), next.Day(), at.Hour, at.Minute, at.Second, 0, time.Local)
 		if next.Before(time.Now()) {
 			// the next time is in one week
 			next = next.AddDate(0, 0, 7)
@@ -121,8 +121,8 @@ func (ts *TaskSchedule) nextExecutionIn() time.Duration {
 		todayNum := now.Day()
 		var next time.Time
 		nextDay := ts.nextDay()
-		at := nextDay.at
-		nextDayNum := nextDay.day
+		at := nextDay.At
+		nextDayNum := nextDay.Day
 
 		if int(nextDayNum) < todayNum {
 			// advance one month
@@ -130,16 +130,16 @@ func (ts *TaskSchedule) nextExecutionIn() time.Duration {
 
 			// auto. shrink to the correct day of the next month
 			nextDay := shrinkDay(nextDayNum, next)
-			next = time.Date(next.Year(), next.Month(), int(nextDay), at.hour, at.minute, at.second, 0, time.Local)
+			next = time.Date(next.Year(), next.Month(), int(nextDay), at.Hour, at.Minute, at.Second, 0, time.Local)
 		} else {
 			nextDay := shrinkDay(nextDayNum, now)
-			next = time.Date(now.Year(), now.Month(), int(nextDay), at.hour, at.minute, at.second, 0, time.Local)
+			next = time.Date(now.Year(), now.Month(), int(nextDay), at.Hour, at.Minute, at.Second, 0, time.Local)
 		}
 		if next.Before(time.Now()) {
 			// the next time is in one month
 			nextMonthDate := addMonth(next)
 			nextDay := shrinkDay(nextDayNum, nextMonthDate)
-			next = time.Date(nextMonthDate.Year(), nextMonthDate.Month(), int(nextDay), at.hour, at.minute, at.second, 0, time.Local)
+			next = time.Date(nextMonthDate.Year(), nextMonthDate.Month(), int(nextDay), at.Hour, at.Minute, at.Second, 0, time.Local)
 		}
 		return time.Until(next)
 	}

@@ -16,8 +16,8 @@ func NewMonthDay(day uint, at DayTime) MonthDay {
 
 // a day in a month and a specific time on that day
 type MonthDay struct {
-	day uint
-	at  DayTime
+	Day uint    `json:"day"`
+	At DayTime `json:"at"`
 }
 
 type MonthDaysSorted []MonthDay
@@ -28,21 +28,21 @@ func (mds MonthDaysSorted) Less(i, j int) bool {
 	this := mds[i]
 	next := mds[j]
 
-	if this.day < next.day {
+	if this.Day < next.Day {
 		return true
 	}
 
-	if this.day > next.day {
+	if this.Day > next.Day {
 		return false
 	}
 
-	return this.at.AsTime().Before(next.at.AsTime())
+	return this.At.AsTime().Before(next.At.AsTime())
 }
 
 // a weekday and a specific time on that day
 type Weekday struct {
-	day time.Weekday
-	at  DayTime
+	Day time.Weekday `json:"weekday"`
+	At DayTime      `json:"at"`
 }
 
 type WeekdaysSorted []Weekday
@@ -53,26 +53,26 @@ func (wds WeekdaysSorted) Less(i, j int) bool {
 	this := wds[i]
 	next := wds[j]
 
-	if this.day < next.day {
+	if this.Day < next.Day {
 		return true
 	}
 
-	if this.day > next.day {
+	if this.Day > next.Day {
 		return false
 	}
 
-	return this.at.AsTime().Before(next.at.AsTime())
+	return this.At.AsTime().Before(next.At.AsTime())
 }
 
 // represents a 24 hour day
 type DayTime struct {
-	hour   int
-	minute int
-	second int
+	Hour   int `json:"hour"`
+	Minute int `json:"minute"`
+	Second int `json:"second"`
 }
 
 func (dt *DayTime) AsTime() time.Time {
-	return time.Date(0, 0, 0, dt.hour, dt.minute, dt.second, 0, time.Local)
+	return time.Date(0, 0, 0, dt.Hour, dt.Minute, dt.Second, 0, time.Local)
 }
 
 type DayTimesSorted []DayTime
