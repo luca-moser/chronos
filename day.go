@@ -41,7 +41,7 @@ func (mds MonthDaysSorted) Less(i, j int) bool {
 
 // a weekday and a specific time on that day
 type Weekday struct {
-	Day time.Weekday `json:"weekday"`
+	Day time.Weekday `json:"day"`
 	At DayTime      `json:"at"`
 }
 
