@@ -57,6 +57,10 @@ type TaskSchedule struct {
 
 func (ts *TaskSchedule) Init(exe chan<- struct{}, abort <-chan struct{}) {
 
+	// adjust the next index according to now
+	ts.adjustNextIndex()
+
+	// run the clock
 exit:
 	for {
 		nextDurationToWait := ts.nextExecutionIn()
@@ -72,6 +76,111 @@ exit:
 		}
 		// next execution time is reached, execute task
 		exe <- struct{}{}
+	}
+}
+
+// sets the correct index to get the next time to check from
+func (ts *TaskSchedule) adjustNextIndex() {
+	now := time.Now()
+	var nearestIndex int
+	var previousDelta time.Duration
+	init := false
+
+	switch ts.Plan {
+
+	case INTERVAL_EVERY_DAY:
+		for i, dT := range ts.DailyTimes {
+			x := time.Date(now.Year(), now.Month(), now.Day(), dT.Hour, dT.Minute, dT.Second, 0, time.Local)
+			delta := time.Until(x)
+			if delta < 0 {
+				continue
+			}
+
+			if !init {
+				previousDelta = delta
+				init = true
+				nearestIndex = i
+				continue
+			}
+
+			if time.Until(x) < previousDelta {
+				previousDelta = delta
+				nearestIndex = i
+			}
+		}
+		ts.NextDailyTimeIndex = nearestIndex
+
+	case INTERVAL_EVERY_WEEK:
+
+		todayWeekday := now.Weekday()
+		for i, weekday := range ts.Weekdays {
+			at := weekday.At
+
+			var x time.Time
+			if weekday.Day < todayWeekday {
+				inWeekAdv := 7 - todayWeekday
+				x = now.AddDate(0, 0, int(inWeekAdv+weekday.Day))
+			} else {
+				x = now.AddDate(0, 0, int(weekday.Day-todayWeekday))
+			}
+			x = time.Date(now.Year(), now.Month(), x.Day(), at.Hour, at.Minute, at.Second, 0, time.Local)
+
+			delta := time.Until(x)
+			if delta < 0 {
+				continue
+			}
+
+			if !init {
+				previousDelta = delta
+				init = true
+				nearestIndex = i
+				continue
+			}
+
+			if time.Until(x) < previousDelta {
+				previousDelta = delta
+				nearestIndex = i
+			}
+		}
+		ts.NextWeekdayIndex = nearestIndex
+
+	case INTERVAL_EVERY_MONTH:
+
+		todayNum := now.Day()
+		for i, monthDay := range ts.Days {
+			at := monthDay.At
+
+			var x time.Time
+			if int(monthDay.Day) < todayNum {
+				// advance one month
+				x = addMonth(now)
+
+				// auto. shrink to the correct day of the next month
+				nextDay := shrinkDay(monthDay.Day, x)
+				x = time.Date(x.Year(), x.Month(), int(nextDay), at.Hour, at.Minute, at.Second, 0, time.Local)
+			} else {
+				nextDay := shrinkDay(monthDay.Day, now)
+				x = time.Date(now.Year(), now.Month(), int(nextDay), at.Hour, at.Minute, at.Second, 0, time.Local)
+			}
+
+			delta := time.Until(x)
+			if delta < 0 {
+				continue
+			}
+
+			if !init {
+				previousDelta = delta
+				init = true
+				nearestIndex = i
+				continue
+			}
+
+			if time.Until(x) < previousDelta {
+				previousDelta = delta
+				nearestIndex = i
+			}
+		}
+		ts.NextDayIndex = nearestIndex
 	}
 }
 
@@ -111,8 +220,10 @@ func (ts *TaskSchedule) nextExecutionIn() time.Duration {
 			next = now.AddDate(0, 0, int(nextWeekdayNum-todayWeekday))
 		}
 		next = time.Date(now.Year(), now.Month(), next.Day(), at.Hour, at.Minute, at.Second, 0, time.Local)
+
+		// the next computed time might be the same weekday as now but the hour:minute already passed
+		// so we advance one week again
 		if next.Before(time.Now()) {
-			// the next time is in one week
 			next = next.AddDate(0, 0, 7)
 		}
 		return time.Until(next)

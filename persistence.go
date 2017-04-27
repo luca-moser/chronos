@@ -59,3 +59,7 @@ func (fs *FileStorage) LoadSchedule() (*TaskSchedule, error) {
 	}
 	return schedule, nil
 }
+
+func (fs *FileStorage) RemoveSchedule() error {
+	return os.Remove(path.Join(fs.Path, fs.Filename))
+}
