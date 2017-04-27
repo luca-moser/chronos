@@ -65,6 +65,26 @@ func TestDailySchedule(t *testing.T) {
 	}
 }
 
+func TestDaily2Schedule(t *testing.T) {
+	t.Parallel()
+	now := time.Now()
+	fiveSecondsAgo := now.Add(-time.Duration(5)*time.Second)
+	plan := NewDailySchedulingPlan([]DayTime{
+		{fiveSecondsAgo.Hour(), fiveSecondsAgo.Minute(), fiveSecondsAgo.Second()},
+	})
+
+	executionCount := 0
+	task := NewScheduledTask(func() {
+		executionCount++
+	}, plan)
+	defer task.Stop()
+	task.Start()
+	<-time.After(time.Duration(3) * time.Second)
+	if executionCount != 0 {
+		t.Fatalf("expected execution count to be 0 but was %d", executionCount)
+	}
+}
+
 func TestWeeklySchedule(t *testing.T) {
 	t.Parallel()
 	now := time.Now()
@@ -83,6 +103,31 @@ func TestWeeklySchedule(t *testing.T) {
 	<-time.After(time.Duration(4) * time.Second)
 	if executionCount != 3 {
 		t.Fatalf("expected execution count to be 3 but was %d", executionCount)
+	}
+}
+
+func TestWeekly2Schedule(t *testing.T) {
+	t.Parallel()
+	now := time.Now()
+	day := now.Weekday()
+	if day == time.Sunday {
+		day = time.Saturday
+	}else{
+		day = day - 1
+	}
+	plan := NewWeeklySchedulingPlan([]Weekday{
+		{Day: day, At: DayTime{18, 30, 0}},
+	})
+
+	executionCount := 0
+	task := NewScheduledTask(func() {
+		executionCount++
+	}, plan)
+	defer task.Stop()
+	task.Start()
+	<-time.After(time.Duration(1) * time.Second)
+	if executionCount != 0 {
+		t.Fatalf("expected execution count to be 0 but was %d", executionCount)
 	}
 }
 

@@ -123,7 +123,7 @@ func (ts *TaskSchedule) adjustNextIndex() {
 			} else {
 				x = now.AddDate(0, 0, int(weekday.Day-todayWeekday))
 			}
-			x = time.Date(now.Year(), now.Month(), x.Day(), at.Hour, at.Minute, at.Second, 0, time.Local)
+			x = time.Date(x.Year(), x.Month(), x.Day(), at.Hour, at.Minute, at.Second, 0, time.Local)
 
 			delta := time.Until(x)
 			if delta < 0 {
@@ -219,7 +219,7 @@ func (ts *TaskSchedule) nextExecutionIn() time.Duration {
 			// same week
 			next = now.AddDate(0, 0, int(nextWeekdayNum-todayWeekday))
 		}
-		next = time.Date(now.Year(), now.Month(), next.Day(), at.Hour, at.Minute, at.Second, 0, time.Local)
+		next = time.Date(next.Year(), next.Month(), next.Day(), at.Hour, at.Minute, at.Second, 0, time.Local)
 
 		// the next computed time might be the same weekday as now but the hour:minute already passed
 		// so we advance one week again
